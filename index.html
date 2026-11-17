@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>海鮮肉舖大廚 - Seafood & Meat Master Chef</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #2b1e19;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .font-game {
+            font-family: 'Fredoka One', 'Noto Sans TC', cursive;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f97316;
+            border-radius: 4px;
+        }
+
+        /* Wok Smoke Animation */
+        @keyframes steam {
+            0% { transform: translateY(0) scaleX(1); opacity: 0.8; }
+            50% { transform: translateY(-30px) scaleX(1.3); opacity: 0.4; }
+            100% { transform: translateY(-60px) scaleX(1.6); opacity: 0; }
+        }
+
+        .steam-particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: steam 1.5s infinite linear;
+        }
+
+        /* Pan Toss Animation */
+        @keyframes wokToss {
+            0% { transform: translateY(0) rotate(0deg); }
+            30% { transform: translateY(-25px) rotate(-8deg); }
+            60% { transform: translateY(-35px) rotate(5deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+
+        .tossing {
+            animation: wokToss 0.4s ease-in-out;
+        }
+
+        /* Cutting Effect */
+        @keyframes sliceSlash {
+            0% { opacity: 1; transform: scaleX(0); }
+            50% { opacity: 1; transform: scaleX(1); }
+            100% { opacity: 0; transform: scaleX(1); }
+        }
+
+        .slash-effect {
+            position: absolute;
+            height: 4px;
+            background: white;
+            box-shadow: 0 0 8px cyan;
+            transform-origin: left center;
+            animation: sliceSlash 0.25s forwards;
+        }
+
+        /* Wooden Texture Card Backgrounds */
+        .wood-bg {
+            background: #8b5a2b;
+            background-image: radial-gradient(#a06832 15%, transparent 16%), radial-gradient(#6e441f 15%, transparent 16%);
+            background-size: 20px 20px;
+        }
+
+        .kitchen-tile {
+            background-color: #fff7ed;
+            background-image: radial-gradient(#fed7aa 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden bg-stone-900 text-stone-800 text-base">
+
+    <!-- 💡 上方資訊列 (Top Status Bar) -->
+    <header class="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 text-white px-5 py-3 flex justify-between items-center shadow-lg border-b-4 border-amber-800 z-30">
+        <div class="flex items-center space-x-3">
+            <div class="bg-amber-900 p-2.5 rounded-xl border-2 border-amber-400 shadow-inner flex items-center justify-center">
+                <i class="fa-solid fa-utensils text-amber-300 text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="font-game text-2xl md:text-3xl tracking-wide text-amber-200 drop-shadow-md">海鮮肉舖大廚</h1>
+                <p class="text-xs text-amber-100 hidden sm:block">Seafood & Meat Master Chef</p>
+            </div>
+        </div>
+
+        <!-- 數據指標 -->
+        <div class="flex items-center space-x-4 md:space-x-8 text-base font-bold">
+            <div class="bg-amber-950/60 px-4 py-2 rounded-full border border-amber-400/40 flex items-center space-x-2">
+                <i class="fa-solid fa-coins text-amber-400 text-xl"></i>
+                <span id="stat-gold" class="text-amber-200 font-game text-lg">500</span>
+            </div>
+            <div class="bg-amber-950/60 px-4 py-2 rounded-full border border-amber-400/40 flex items-center space-x-2">
+                <i class="fa-solid fa-gem text-cyan-300 text-xl"></i>
+                <span id="stat-gems" class="text-cyan-200 font-game text-lg">10</span>
+            </div>
+            <div class="bg-amber-950/60 px-4 py-2 rounded-full border border-amber-400/40 flex items-center space-x-2">
+                <i class="fa-solid fa-star text-yellow-400 text-xl"></i>
+                <span id="stat-rep" class="text-yellow-200 font-game text-lg">100%</span>
+            </div>
+            <div class="bg-amber-950/60 px-4 py-2 rounded-full border border-amber-400/40 flex items-center space-x-2 hidden sm:flex">
+                <i class="fa-solid fa-trophy text-orange-400"></i>
+                <span class="text-orange-100">Lv.<span id="stat-level">1</span></span>
+            </div>
+        </div>
+
+        <!-- 暫停 / 選單控制 -->
+        <div class="flex items-center space-x-3">
+            <button id="btn-sound" onclick="toggleSound()" class="bg-orange-800 hover:bg-orange-700 p-2.5 rounded-xl border border-amber-400 text-amber-200 transition text-lg">
+                <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+            </button>
+            <button onclick="togglePauseModal()" class="bg-orange-800 hover:bg-orange-700 p-2.5 rounded-xl border border-amber-400 text-amber-200 transition text-lg">
+                <i class="fa-solid fa-pause"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 🎮 主遊戲區域 (Main Game Canvas Area) -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative kitchen-tile">
+
+        <!-- 左側工作站切換欄 & 食材托盤 (Sidebar Navigation & Pantry) -->
+        <aside class="w-full md:w-72 bg-amber-950 text-amber-100 p-4 flex flex-row md:flex-col justify-between border-b-4 md:border-b-0 md:border-r-4 border-amber-800 z-20 shadow-xl">
+            <!-- 工作站切換按鈕 -->
+            <div class="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-3 overflow-x-auto w-full pb-2 md:pb-0">
+                <button onclick="switchStation('market')" id="nav-market" class="nav-btn active flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-base transition bg-orange-600 text-white shadow-md">
+                    <i class="fa-solid fa-store w-6 text-center text-lg"></i>
+                    <span class="whitespace-nowrap">🛒 食材市場</span>
+                </button>
+                <button onclick="switchStation('anatomy')" id="nav-anatomy" class="nav-btn flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-base transition hover:bg-amber-800 text-amber-200">
+                    <i class="fa-solid fa-microscope w-6 text-center text-lg"></i>
+                    <span class="whitespace-nowrap">🔬 解剖工作站</span>
+                </button>
+                <button onclick="switchStation('prep')" id="nav-prep" class="nav-btn flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-base transition hover:bg-amber-800 text-amber-200">
+                    <i class="fa-solid fa-hand-holding-droplet w-6 text-center text-lg"></i>
+                    <span class="whitespace-nowrap">🔪 清洗與分切</span>
+                </button>
+                <button onclick="switchStation('cooking')" id="nav-cooking" class="nav-btn flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-base transition hover:bg-amber-800 text-amber-200">
+                    <i class="fa-solid fa-fire-burner w-6 text-center text-lg"></i>
+                    <span class="whitespace-nowrap">🔥 熱炒料理區</span>
+                </button>
+                <button onclick="switchStation('encyclopedia')" id="nav-encyclopedia" class="nav-btn flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-base transition hover:bg-amber-800 text-amber-200">
+                    <i class="fa-solid fa-book-open w-6 text-center text-lg"></i>
+                    <span class="whitespace-nowrap">📖 食材圖鑑 (86+)</span>
+                </button>
+                <button onclick="switchStation('shop')" id="nav-shop" class="nav-btn flex items-center space-x-3 px-4 py-3 rounded-xl font-bold text-base transition hover:bg-amber-800 text-amber-200">
+                    <i class="fa-solid fa-shop w-6 text-center text-lg"></i>
+                    <span class="whitespace-nowrap">🏪 餐廳升級</span>
+                </button>
+            </div>
+
+            <!-- 庫存快速檢視面板 (底部/側邊) -->
+            <div class="hidden md:block bg-amber-900/60 p-4 rounded-2xl border border-amber-700/50 mt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-bold text-amber-300">廚房食材庫存</span>
+                    <span id="pantry-count-badge" class="text-xs bg-amber-700 text-amber-100 px-2.5 py-1 rounded-full font-bold">0 種</span>
+                </div>
+                <div id="pantry-mini-list" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1.5 bg-amber-950/80 rounded-xl">
+                    <p class="text-xs text-amber-400 p-2 italic">尚無備妥食材，請先往市場選購。</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 中央工作畫面 (Central Work Panel) -->
+        <section id="work-container" class="flex-1 relative overflow-y-auto p-4 md:p-8 flex flex-col justify-center items-center">
+            
+            <!-- 1. 食材市場區 (Market Station) -->
+            <div id="station-market" class="station-panel w-full max-w-6xl h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 bg-white/80 backdrop-blur p-5 rounded-2xl border-2 border-amber-200 shadow-sm">
+                    <div>
+                        <h2 class="text-2xl font-bold text-amber-900 flex items-center gap-3">
+                            <i class="fa-solid fa-basket-shopping text-orange-500 text-3xl"></i>
+                            鮮肉海鮮觀光市場
+                        </h2>
+                        <p class="text-sm text-amber-700 mt-1">挑選頂級魚蝦蟹肉，進貨至廚房備料解剖與料理。</p>
+                    </div>
+                    <!-- 分類頁籤 -->
+                    <div class="flex flex-wrap gap-2 mt-3 md:mt-0" id="market-cat-tabs">
+                        <button onclick="filterMarket('all')" class="cat-btn active bg-orange-500 text-white text-sm px-4 py-2 rounded-xl font-bold">全部</button>
+                        <button onclick="filterMarket('fish')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">魚類</button>
+                        <button onclick="filterMarket('shrimp')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">蝦蟹</button>
+                        <button onclick="filterMarket('shell')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">貝類</button>
+                        <button onclick="filterMarket('soft')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">軟體</button>
+                        <button onclick="filterMarket('beef')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">牛肉</button>
+                        <button onclick="filterMarket('pork')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">豬肉</button>
+                        <button onclick="filterMarket('poultry')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">禽肉</button>
+                        <button onclick="filterMarket('special')" class="cat-btn bg-stone-200 text-stone-700 text-sm px-4 py-2 rounded-xl font-bold hover:bg-orange-200">特殊</button>
+                    </div>
+                </div>
+
+                <!-- 市場卡片列表 -->
+                <div id="market-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 overflow-y-auto flex-1 pr-2 pb-4">
+                    <!-- 動態渲染食材卡片 -->
+                </div>
+            </div>
+
+            <!-- 2. 食材解剖工作站 (Anatomy Station) -->
+            <div id="station-anatomy" class="station-panel hidden w-full max-w-5xl h-full flex flex-col items-center">
+                <div class="bg-white/90 backdrop-blur p-5 rounded-2xl border-2 border-amber-200 shadow-md w-full mb-5 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-amber-900 flex items-center gap-3">
+                            <i class="fa-solid fa-microscope text-cyan-600 text-3xl"></i>
+                            生物構造與解剖研究台
+                        </h2>
+                        <p class="text-sm text-stone-600 mt-1">點擊食材部位認識生理構造，完成指定部位辨識學習！</p>
+                    </div>
+                    <!-- 選擇解剖目標 -->
+                    <select id="anatomy-target-select" onchange="changeAnatomyTarget(this.value)" class="bg-amber-100 border-2 border-amber-400 font-bold text-amber-900 rounded-xl px-4 py-2.5 text-base outline-none cursor-pointer">
+                        <!-- 動態填充選項 -->
+                    </select>
+                </div>
+
+                <!-- 解剖展示圖框 -->
+                <div class="bg-orange-100/90 border-4 border-amber-700 rounded-3xl p-8 w-full flex-1 flex flex-col md:flex-row gap-8 shadow-inner relative overflow-hidden items-center justify-center">
+                    <div class="w-full md:w-1/2 flex flex-col items-center justify-center bg-white/80 p-8 rounded-3xl border-2 border-orange-200 shadow-sm">
+                        <div id="anatomy-svg-container" class="relative w-56 h-56 md:w-72 md:h-72 flex items-center justify-center">
+                            <!-- SVG 或 Cartoon 插畫 -->
+                        </div>
+                        <h3 id="anatomy-item-name" class="font-game text-3xl text-amber-900 mt-3">鮭魚 (Salmon)</h3>
+                        <span id="anatomy-item-cat" class="text-sm bg-amber-200 text-amber-800 px-3 py-1 rounded-full font-bold mt-2">深海魚類</span>
+                    </div>
+
+                    <!-- 部位標籤互動按鈕 -->
+                    <div class="w-full md:w-1/2 flex flex-col h-full">
+                        <h4 class="font-bold text-amber-900 border-b-2 border-amber-300 pb-3 mb-4 flex items-center justify-between text-base">
+                            <span>部位構造清單 (點擊學習)</span>
+                            <span id="anatomy-progress" class="text-sm text-orange-600 font-game">0/5 完成</span>
+                        </h4>
+                        <div id="anatomy-parts-list" class="flex flex-col gap-3 overflow-y-auto flex-1 pr-2">
+                            <!-- 部位互動動態渲染 -->
+                        </div>
+                        <div id="anatomy-info-box" class="mt-4 bg-amber-900 text-amber-100 p-4 rounded-2xl text-sm leading-relaxed min-h-[80px]">
+                            點擊上方任何部位按鈕以學習其生物學特徵與廚藝加工用途。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 食材清洗與分切區 (Prep & Chop Station) -->
+            <div id="station-prep" class="station-panel hidden w-full max-w-5xl h-full flex flex-col items-center justify-center">
+                <div class="bg-white/90 backdrop-blur p-5 rounded-2xl border-2 border-amber-200 shadow-md w-full mb-5 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-amber-900 flex items-center gap-3">
+                            <i class="fa-solid fa-utensils text-orange-600 text-3xl"></i>
+                            主廚砧板分切與清洗台
+                        </h2>
+                        <p class="text-sm text-stone-600 mt-1">進行洗滌與精準切塊，整備料理所需主料！（已大幅簡化步驟）</p>
+                    </div>
+                    <select id="prep-item-select" onchange="changePrepTarget(this.value)" class="bg-amber-100 border-2 border-amber-400 font-bold text-amber-900 rounded-xl px-4 py-2.5 text-base outline-none cursor-pointer">
+                        <!-- 選單 -->
+                    </select>
+                </div>
+
+                <!-- 木砧板區 -->
+                <div class="wood-bg border-8 border-amber-900 rounded-3xl p-10 w-full flex-1 flex flex-col items-center justify-center shadow-2xl relative">
+                    <!-- 水聲/切菜特效覆蓋層 -->
+                    <div id="prep-interactive-board" onclick="triggerPrepCut(event)" class="relative cursor-pointer bg-amber-100/40 border-4 border-dashed border-amber-300/60 rounded-3xl w-full max-w-xl h-80 flex flex-col items-center justify-center overflow-hidden transition active:scale-95 shadow-inner">
+                        <div id="prep-graphic-display" class="text-9xl select-none filter drop-shadow-2xl transition-all duration-300">
+                            🐟
+                        </div>
+                        <p id="prep-hint-text" class="text-white font-bold bg-amber-900/90 px-6 py-2 rounded-full text-sm mt-6 shadow-lg">
+                            點擊砧板 2 下即可完成分切作業
+                        </p>
+                    </div>
+
+                    <!-- 操作進度條與按鈕 -->
+                    <div class="w-full max-w-xl mt-8 flex flex-col gap-4">
+                        <div class="flex justify-between text-amber-100 font-bold text-sm">
+                            <span id="prep-status-label">準備狀態：未處理原食材</span>
+                            <span id="prep-progress-text">進度: 0%</span>
+                        </div>
+                        <div class="w-full bg-amber-950 rounded-full h-5 p-1 border border-amber-600">
+                            <div id="prep-progress-bar" class="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full w-0 transition-all duration-200"></div>
+                        </div>
+
+                        <div class="flex gap-4 mt-2">
+                            <button onclick="doPrepAction('wash')" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3.5 rounded-2xl shadow-lg border-b-4 border-cyan-800 text-base flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-droplet text-lg"></i> 一鍵清洗完成
+                            </button>
+                            <button onclick="doPrepAction('slice')" class="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-2xl shadow-lg border-b-4 border-orange-800 text-base flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-knife-kitchen text-lg"></i> 一鍵分切完成
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 熱炒料理區 (Wok Cooking Station) -->
+            <div id="station-cooking" class="station-panel hidden w-full max-w-6xl h-full flex flex-col md:flex-row gap-6">
+                
+                <!-- 左側：中央大炒鍋與火候 control -->
+                <div class="w-full md:w-3/5 bg-stone-800 border-4 border-stone-700 rounded-3xl p-6 flex flex-col items-center justify-between shadow-2xl relative overflow-hidden">
+                    <div class="w-full flex justify-between items-center text-amber-200 border-b border-stone-700 pb-3">
+                        <span class="font-bold text-base"><i class="fa-solid fa-fire text-red-500 text-lg"></i> 台式傳統雙耳大炒鍋</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm">火候控制：</span>
+                            <button onclick="setHeat('low')" id="heat-low" class="px-3 py-1 rounded-lg text-sm font-bold bg-stone-700 text-stone-300">小火</button>
+                            <button onclick="setHeat('med')" id="heat-med" class="px-3 py-1 rounded-lg text-sm font-bold bg-orange-600 text-white">中火</button>
+                            <button onclick="setHeat('high')" id="heat-high" class="px-3 py-1 rounded-lg text-sm font-bold bg-stone-700 text-stone-300">大火</button>
+                        </div>
+                    </div>
+
+                    <!-- 炒鍋本體視覺 -->
+                    <div id="wok-container" onclick="tossWokAction()" class="relative my-6 cursor-pointer group">
+                        <!-- 煙霧蒸氣 -->
+                        <div id="wok-steam-container" class="absolute inset-0 pointer-events-none flex items-center justify-center"></div>
+
+                        <div id="wok-visual" class="w-64 h-64 md:w-80 md:h-80 rounded-full bg-gradient-to-b from-stone-900 via-stone-800 to-black border-8 border-stone-600 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden border-t-stone-500">
+                            <div id="wok-contents-icons" class="flex flex-wrap items-center justify-center gap-3 p-8 max-w-[85%] text-center select-none text-5xl">
+                                <span class="text-stone-500 text-base font-bold">空鍋 (點擊食材與調味料入鍋)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 烹飪狀態 & 翻炒按鈕 -->
+                    <div class="w-full flex flex-col items-center gap-3">
+                        <div class="flex items-center gap-4 w-full max-w-lg">
+                            <span class="text-sm text-amber-200 font-bold whitespace-nowrap">熟度:</span>
+                            <div class="flex-1 bg-stone-900 rounded-full h-4 border border-stone-600 overflow-hidden">
+                                <div id="cook-doneness-bar" class="bg-gradient-to-r from-amber-400 via-green-400 to-red-500 h-full w-0 transition-all duration-300"></div>
+                            </div>
+                            <span id="cook-doneness-text" class="text-sm text-amber-300 font-bold w-16">生生</span>
+                        </div>
+
+                        <div class="flex gap-4 w-full max-w-lg mt-2">
+                            <button onclick="tossWokAction()" class="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-3.5 rounded-2xl shadow-md border-b-4 border-amber-800 text-base flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrows-up-down text-lg"></i> 顛鍋翻炒 (顛一顛)
+                            </button>
+                            <button onclick="serveDishAction()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-2xl shadow-md border-b-4 border-teal-800 text-base flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-plate-wheat text-lg"></i> 起鍋擺盤送餐
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：調味料架與備料區 -->
+                <div class="w-full md:w-2/5 bg-amber-950/80 border-4 border-amber-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl">
+                    <div>
+                        <h3 class="text-base font-bold text-amber-200 border-b border-amber-800 pb-3 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-bottle-droplet text-amber-400 text-lg"></i>
+                            主廚專用調味料架 (15種)
+                        </h3>
+                        <div id="seasoning-rack" class="grid grid-cols-3 gap-2.5 max-h-56 overflow-y-auto p-1">
+                            <!-- 15 種調味料按鈕 -->
+                        </div>
+                    </div>
+
+                    <!-- 目前鍋內材料與醬汁總覽 -->
+                    <div class="mt-5 bg-amber-900/90 p-4 rounded-2xl border border-amber-700 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-sm font-bold text-amber-300 mb-2">鍋內下料與調味細節：</h4>
+                            <div id="wok-summary-list" class="text-sm text-amber-100 space-y-1.5 max-h-32 overflow-y-auto">
+                                <p class="text-amber-400 italic">尚未加入食材或醬汁。</p>
+                            </div>
+                        </div>
+                        <button onclick="clearWokAction()" class="mt-3 text-sm text-red-300 hover:text-red-100 text-right underline">
+                            清空炒鍋重來
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. 食材圖鑑與收藏系統 (Encyclopedia Station) -->
+            <div id="station-encyclopedia" class="station-panel hidden w-full max-w-6xl h-full flex flex-col">
+                <div class="bg-white/90 backdrop-blur p-5 rounded-2xl border-2 border-amber-200 shadow-md w-full mb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div>
+                        <h2 class="text-2xl font-bold text-amber-900 flex items-center gap-3">
+                            <i class="fa-solid fa-book-bookmark text-amber-600 text-3xl"></i>
+                            海鮮肉品百科全書 (圖鑑)
+                        </h2>
+                        <p class="text-sm text-stone-600 mt-1">解鎖市場 86+ 種食材，點亮百科並學習廚藝知識！</p>
+                    </div>
+
+                    <!-- 搜尋與完成度統計 -->
+                    <div class="flex items-center gap-4 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-56">
+                            <input type="text" id="enc-search-input" oninput="renderEncyclopedia()" placeholder="搜尋食材..." class="w-full bg-amber-50 border border-amber-300 rounded-xl px-4 py-2 text-sm font-bold text-amber-900 outline-none pl-10">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-sm text-amber-500"></i>
+                        </div>
+                        <span id="enc-completion-badge" class="bg-amber-800 text-amber-200 text-sm px-4 py-2 rounded-xl font-bold whitespace-nowrap">
+                            解鎖度: 0 / 86
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 圖鑑展示網格 -->
+                <div id="encyclopedia-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 overflow-y-auto flex-1 pr-2 pb-4">
+                    <!-- 動態渲染圖鑑項目 -->
+                </div>
+            </div>
+
+            <!-- 6. 餐廳經營與升級 (Shop Station) -->
+            <div id="station-shop" class="station-panel hidden w-full max-w-5xl h-full flex flex-col items-center">
+                <div class="bg-white/90 backdrop-blur p-5 rounded-2xl border-2 border-amber-200 shadow-md w-full mb-5 text-center">
+                    <h2 class="text-2xl font-bold text-amber-900 flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-store-slash text-orange-600 text-3xl"></i>
+                        熱炒店經營與裝潢設備升級
+                    </h2>
+                    <p class="text-sm text-stone-600 mt-1">升級廚房工具、解鎖稀有肉品食材權限，擴大餐廳營業規模！</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 w-full overflow-y-auto flex-1 pr-2">
+                    <!-- 設備卡片 1 -->
+                    <div class="bg-white p-6 rounded-2xl border-2 border-amber-200 shadow-sm flex items-center space-x-5">
+                        <div class="w-20 h-20 bg-orange-100 rounded-2xl border border-orange-300 flex items-center justify-center text-orange-600 text-4xl">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-amber-900 text-lg">高效鼓風炮火爐</h3>
+                            <p class="text-xs text-stone-500 mt-1">提升炒鍋熟成速度 25%，增加熱炒鑊氣評分。</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-sm font-bold text-amber-700">等級 <span id="lvl-stove">1</span></span>
+                                <button onclick="buyUpgrade('stove', 200)" class="bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm px-4 py-2 rounded-xl shadow">
+                                    升級 ($200)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 設備卡片 2 -->
+                    <div class="bg-white p-6 rounded-2xl border-2 border-amber-200 shadow-sm flex items-center space-x-5">
+                        <div class="w-20 h-20 bg-cyan-100 rounded-2xl border border-cyan-300 flex items-center justify-center text-cyan-600 text-4xl">
+                            <i class="fa-solid fa-snowflake"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-amber-900 text-lg">急速深海冷凍庫</h3>
+                            <p class="text-xs text-stone-500 mt-1">解鎖「帝王蟹、和牛、海膽」等稀有高階食材進貨權。</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-sm font-bold text-amber-700">等級 <span id="lvl-fridge">1</span></span>
+                                <button onclick="buyUpgrade('fridge', 400)" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm px-4 py-2 rounded-xl shadow">
+                                    升級 ($400)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 設備卡片 3 -->
+                    <div class="bg-white p-6 rounded-2xl border-2 border-amber-200 shadow-sm flex items-center space-x-5">
+                        <div class="w-20 h-20 bg-amber-100 rounded-2xl border border-amber-300 flex items-center justify-center text-amber-700 text-4xl">
+                            <i class="fa-solid fa-wine-glass"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-amber-900 text-lg">熱炒店氛圍燈光與座位</h3>
+                            <p class="text-xs text-stone-500 mt-1">提高顧客耐性 30%，小費與評價收益額外加成。</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-sm font-bold text-amber-700">等級 <span id="lvl-seating">1</span></span>
+                                <button onclick="buyUpgrade('seating', 300)" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-xl shadow">
+                                    升級 ($300)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 設備卡片 4 -->
+                    <div class="bg-white p-6 rounded-2xl border-2 border-amber-200 shadow-sm flex items-center space-x-5">
+                        <div class="w-20 h-20 bg-purple-100 rounded-2xl border border-purple-300 flex items-center justify-center text-purple-700 text-4xl">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-amber-900 text-lg">主廚米其林認證</h3>
+                            <p class="text-xs text-stone-500 mt-1">提升餐廳聲譽上限，吸引貴賓級顧客上門。</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-sm font-bold text-amber-700">等級 <span id="lvl-chef">1</span></span>
+                                <button onclick="buyUpgrade('chef', 500)" class="bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm px-4 py-2 rounded-xl shadow">
+                                    升級 ($500)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 右側顧客訂單與小提示 (Right Order Panel - Papa's Style) -->
+        <aside class="w-full md:w-96 bg-stone-900 border-t-4 md:border-t-0 md:border-l-4 border-amber-800 p-5 flex flex-col justify-between z-20 shadow-2xl">
+            <!-- 顧客頭像與訂單票據 (Order Ticket) -->
+            <div class="bg-amber-100 rounded-2xl border-4 border-amber-300 p-5 shadow-xl relative overflow-hidden">
+                <!-- 票據釘子視覺 -->
+                <div class="absolute top-2.5 left-1/2 -translate-x-1/2 w-5 h-5 bg-amber-800 rounded-full border-2 border-amber-400"></div>
+
+                <div class="flex items-center space-x-4 border-b-2 border-dashed border-amber-300 pb-4 pt-2">
+                    <div id="customer-avatar" class="w-14 h-14 bg-orange-200 rounded-full border-2 border-orange-400 flex items-center justify-center text-3xl shadow-inner">
+                        🧔
+                    </div>
+                    <div>
+                        <h3 id="customer-name" class="font-bold text-amber-900 text-base">熱炒老饕 - 陳大哥</h3>
+                        <p id="customer-trait" class="text-xs text-amber-700 font-bold mt-0.5">口味偏好：重香辣、大火快炒</p>
+                    </div>
+                </div>
+
+                <!-- 點餐需求明細 -->
+                <div class="my-4 space-y-2 font-medium">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-stone-500">指定熱炒料理：</span>
+                        <span id="order-dish-name" class="font-game font-bold text-orange-600 text-base">蒜蓉炒草蝦</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-stone-500">核心食材需求：</span>
+                        <span id="order-req-ingredient" class="font-bold text-stone-800">🦐 草蝦 (已清洗/分切)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-stone-500">建議調味醬汁：</span>
+                        <span id="order-req-seasoning" class="font-bold text-amber-800">🧄 蒜末、🍾 米酒、醬油</span>
+                    </div>
+                </div>
+
+                <!-- 顧客耐性計時條 -->
+                <div class="mt-3">
+                    <div class="flex justify-between text-xs font-bold text-amber-800 mb-1.5">
+                        <span>顧客等待耐性 (預設2分鐘)</span>
+                        <span id="order-timer-text" class="text-sm">120 秒</span>
+                    </div>
+                    <div class="w-full bg-amber-300 rounded-full h-3 overflow-hidden">
+                        <div id="order-timer-bar" class="bg-emerald-500 h-full w-full transition-all duration-1000"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主廚對話與教學提示框 -->
+            <div class="bg-amber-950/80 p-4 rounded-2xl border border-amber-700/60 mt-4 flex-1 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 text-amber-400 mb-2">
+                        <i class="fa-solid fa-comment-dots text-base"></i>
+                        <span class="text-sm font-bold">主廚烹飪提示 (Tips)</span>
+                    </div>
+                    <p id="chef-tip-msg" class="text-xs text-amber-200 leading-relaxed">
+                        歡迎掌廚！請先至「食材市場」購入【草蝦】，並在「清洗與分切」台處理乾淨後，再放入炒鍋下蒜末爆香起鍋喔！
+                    </p>
+                </div>
+                
+                <!-- 換一位顧客按鈕 -->
+                <button onclick="generateRandomOrder()" class="mt-4 w-full bg-amber-800 hover:bg-amber-700 text-amber-100 font-bold text-sm py-2.5 rounded-xl transition border border-amber-600">
+                    <i class="fa-solid fa-arrows-rotate mr-1.5"></i> 接取下一位顧客訂單
+                </button>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- 底部資訊與選單 Footer Bar -->
+    <footer class="bg-amber-950 text-amber-400 px-5 py-2 text-xs flex justify-between items-center border-t-2 border-amber-800 z-30">
+        <div>💡 提示：可切換解剖模式學習部位知識，點擊食材與醬汁進行烹飪。</div>
+        <div>海鮮肉舖大廚 v1.1.0 | Papa's Cooking Engine</div>
+    </footer>
+
+    <!-- 🌟 開始 / 暫停 Modal 視窗 -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-gradient-to-b from-amber-50 to-orange-100 max-w-lg w-full rounded-3xl border-4 border-amber-600 p-8 shadow-2xl text-center relative overflow-hidden">
+            <h2 class="font-game text-4xl text-orange-600 mb-2 drop-shadow">🦐 海鮮肉舖大廚 🥩</h2>
+            <p class="text-sm text-amber-900 mb-5 font-bold">Seafood & Meat Master Chef</p>
+            
+            <div class="bg-white/80 p-5 rounded-2xl border border-amber-300 text-sm text-stone-700 space-y-2.5 text-left mb-6 leading-relaxed">
+                <p>👉 <strong>食材市場採購：</strong>選購 86+ 種新鮮海鮮、牛肉、豬肉與禽肉。</p>
+                <p>👉 <strong>精細解剖研究：</strong>學習魚鰓、魚鱗、蟹黃、肋眼等生物部位構造。</p>
+                <p>👉 <strong>清洗分切刀工：</strong>簡化備料點擊 2 下輕鬆搞定。</p>
+                <p>👉 <strong>台式熱炒料理：</strong>寬敞空間大火快炒、2 分鐘充裕時間完成訂單！</p>
+            </div>
+
+            <button onclick="closeModal()" class="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-game text-2xl py-3.5 rounded-2xl shadow-lg border-b-4 border-amber-800 transition transform active:scale-95">
+                開始營業廚房 🍳
+            </button>
+        </div>
+    </div>
+
+    <!-- 📜 JavaScript 全局遊戲邏輯與資料庫 -->
+    <script>
+        /* ==========================================================================
+           1. 86+ 種完整食材資料庫 (帶有專屬部位與圖示貼圖)
+           ========================================================================== */
+        const INGREDIENTS_DATABASE = [
+            // A. 魚類 (Fish - 15種)
+            { id: 'salmon', name: '鮭魚', cat: 'fish', icon: '🐟', price: 120, rare: 'common', desc: '油脂豐厚，富含 Omega-3 的深海美味魚類。', parts: ['🗣️ 魚頭', '👁️ 魚眼', '🫁 魚鰓', '🛡️ 魚鱗', '🥓 魚腹', '🥩 魚肉', '🦴 魚骨'], prepReq: 'wash_slice' },
+            { id: 'tuna', name: '鮪魚', cat: 'fish', icon: '🦈', price: 180, rare: 'rare', desc: '肉質結實、赤身與大腹皆極具價值的海洋之王。', parts: ['🗣️ 魚頭', '🔴 赤身', '🥓 大腹', '🥩 中腹', '尾 魚尾'], prepReq: 'slice' },
+            { id: 'mackerel', name: '鯖魚', cat: 'fish', icon: '🐟', price: 70, rare: 'common', desc: '台式鹽烤與熱炒熱門魚種，營養價值極高。', parts: ['🗣️ 魚頭', '🐟 魚身', '✨ 魚皮', '🦴 魚骨'], prepReq: 'wash_slice' },
+            { id: 'saury', name: '秋刀魚', cat: 'fish', icon: '🐟', price: 50, rare: 'common', desc: '秋季最肥美，帶有些微苦甘風味。', parts: ['🗣️ 魚頭', '🐟 魚身', '🫀 內臟', '尾 魚尾'], prepReq: 'wash' },
+            { id: 'bass', name: '鱸魚', cat: 'fish', icon: '🐠', price: 110, rare: 'common', desc: '肉質細嫩，適合清蒸與薑絲魚片湯。', parts: ['🗣️ 魚頭', '🥓 魚腩', '🥩 魚肉', '🦴 魚骨'], prepReq: 'wash_slice' },
+            { id: 'yellow_croaker', name: '黃魚', cat: 'fish', icon: '🐟', price: 130, rare: 'rare', desc: '黃海名產，蒜子燒黃魚之頂級食材。', parts: ['🗣️ 魚頭', '🛡️ 魚鱗', '🐟 魚身'], prepReq: 'wash' },
+            { id: 'tilapia', name: '吳郭魚', cat: 'fish', icon: '🐟', price: 40, rare: 'common', desc: '台灣鯛，熱炒紅燒與鹽烤必備。', parts: ['🗣️ 魚頭', '✨ 魚皮', '🥩 魚肉'], prepReq: 'wash_slice' },
+            { id: 'milkfish', name: '虱目魚', cat: 'fish', icon: '🐟', price: 85, rare: 'common', desc: '台南名產，魚肚肥美油脂香濃。', parts: ['🗣️ 魚頭', '🥓 魚肚', '✨ 魚皮', '🥩 魚肉'], prepReq: 'wash_slice' },
+            { id: 'grouper', name: '石斑魚', cat: 'fish', icon: '🐠', price: 250, rare: 'rare', desc: '皮Q肉彈，辦桌喜宴頂級清蒸海鮮。', parts: ['🗣️ 魚頭', '✨ 膠原魚皮', '🥩 魚肉', '🦴 魚骨'], prepReq: 'wash_slice' },
+            { id: 'cod', name: '鱈魚', cat: 'fish', icon: '🐟', price: 160, rare: 'rare', desc: '雪白滑嫩，豆酥與清蒸首選。', parts: ['✨ 魚皮', '🥩 鱈魚肉', '🦴 魚骨'], prepReq: 'slice' },
+            { id: 'eel', name: '鰻魚', cat: 'fish', icon: '🐍', price: 220, rare: 'rare', desc: '蒲燒與三杯皆宜的高級滋補魚類。', parts: ['🗣️ 魚頭', '🐍 鰻魚身', '🦴 魚骨'], prepReq: 'wash_slice' },
+            { id: 'snapper', name: '鯛魚', cat: 'fish', icon: '🐟', price: 90, rare: 'common', desc: '鯛魚片適合糖醋與炒魚片。', parts: ['🥩 鯛魚片', '尾 魚尾'], prepReq: 'slice' },
+            { id: 'mahi_mahi', name: '鬼頭刀', cat: 'fish', icon: '🐬', price: 100, rare: 'common', desc: '東海岸飛魚季要角，肉質扎實。', parts: ['🗣️ 魚頭', '🥩 魚肉'], prepReq: 'slice' },
+            { id: 'bonito', name: '鰹魚', cat: 'fish', icon: '🐟', price: 95, rare: 'common', desc: '柴魚片原形，炙燒與生魚片極佳。', parts: ['🐟 魚身', '🔴 血合肉'], prepReq: 'slice' },
+            { id: 'threadfin', name: '午仔魚', cat: 'fish', icon: '🐟', price: 140, rare: 'rare', desc: '俗諺「一午二鯧」，肉質極致細緻。', parts: ['🗣️ 魚頭', '🐟 魚身', '🥓 魚肚'], prepReq: 'wash' },
+
+            // B. 蝦蟹類 (Shrimp & Crab - 13種)
+            { id: 'grass_shrimp', name: '草蝦', cat: 'shrimp', icon: '🦐', price: 90, rare: 'common', desc: '肉質Q彈，蒜蓉與胡椒蝦經典主料。', parts: ['🗣️ 蝦頭', '🛡️ 蝦殼', '🦐 蝦身', '🦵 蝦腳', '🧵 蝦腸', '尾 蝦尾'], prepReq: 'wash_slice' },
+            { id: 'white_shrimp', name: '白蝦', cat: 'shrimp', icon: '🦐', price: 75, rare: 'common', desc: '殼薄肉甜，白灼與鹽酥最顯鮮味。', parts: ['🗣️ 蝦頭', '🛡️ 蝦殼', '🦐 蝦身', '🧵 蝦腸'], prepReq: 'wash' },
+            { id: 'river_prawn', name: '泰國蝦', cat: 'shrimp', icon: '🦐', price: 150, rare: 'rare', desc: '蝦膏飽滿，釣蝦場與胡椒蝦極品。', parts: ['🗣️ 大蝦頭', '🟡 蝦膏', '🦐 蝦身'], prepReq: 'wash' },
+            { id: 'angel_shrimp', name: '天使紅蝦', cat: 'shrimp', icon: '🦐', price: 180, rare: 'rare', desc: '阿根廷進口，生食與燒烤甜味濃郁。', parts: ['🗣️ 蝦頭', '🔴 紅蝦身'], prepReq: 'wash' },
+            { id: 'king_prawn', name: '明蝦', cat: 'shrimp', icon: '🦐', price: 210, rare: 'rare', desc: '斑節蝦，體型碩大肉質扎實。', parts: ['🗣️ 蝦頭', '🦐 明蝦肉'], prepReq: 'wash_slice' },
+            { id: 'mud_crab', name: '螃蟹', cat: 'shrimp', icon: '🦀', price: 130, rare: 'common', desc: '紅樹林青蟹，適合炒蟹腳與避風塘。', parts: ['🛡️ 蟹殼', '✂️ 蟹螯', '🦵 蟹腳', '🦀 蟹身', '🟡 蟹黃'], prepReq: 'wash_slice' },
+            { id: 'flower_crab', name: '花蟹', cat: 'shrimp', icon: '🦀', price: 190, rare: 'rare', desc: '天然花紋，肉質絲絲甜美。', parts: ['🛡️ 蟹殼', '🥩 蟹肉', '🟡 蟹膏'], prepReq: 'wash_slice' },
+            { id: 'three_dot_crab', name: '三點蟹', cat: 'shrimp', icon: '🦀', price: 110, rare: 'common', desc: '萬里蟹主角，殼薄好嚼肉質清甜。', parts: ['🛡️ 蟹殼', '🦵 蟹腳', '🥩 蟹肉'], prepReq: 'wash' },
+            { id: 'green_crab_m', name: '沙公', cat: 'shrimp', icon: '🦀', price: 260, rare: 'rare', desc: '雄性青蟹，雙螯碩大肉量充足。', parts: ['✂️ 大蟹螯', '🥩 蟹身肉'], prepReq: 'wash_slice' },
+            { id: 'green_crab_f', name: '沙母', cat: 'shrimp', icon: '🦀', price: 290, rare: 'rare', desc: '雌性青蟹，滿滿蟹黃香氣逼人。', parts: ['🟡 濃郁蟹黃', '🦀 蟹身'], prepReq: 'wash' },
+            { id: 'king_crab', name: '帝王蟹', cat: 'shrimp', icon: '🦀', price: 600, rare: 'special', desc: '阿拉斯加深海蟹王，蟹腳肉無與倫比。', parts: ['🦵 巨大蟹腳', '🥩 蟹肩肉'], prepReq: 'wash_slice' },
+            { id: 'boston_lobster', name: '波士頓龍蝦', cat: 'shrimp', icon: '🦞', price: 450, rare: 'special', desc: '大鉗龍蝦，蒜蓉清蒸與金沙極佳。', parts: ['✂️ 龍蝦大螯', '🦞 龍蝦尾肉', '🟡 蝦膏'], prepReq: 'wash_slice' },
+            { id: 'crawfish', name: '小龍蝦', cat: 'shrimp', icon: '🦞', price: 120, rare: 'common', desc: '十三香與麻辣小龍蝦之主角。', parts: ['🗣️ 頭部', '🦞 蝦尾肉'], prepReq: 'wash' },
+
+            // C. 貝類 (Shellfish - 10種)
+            { id: 'clam', name: '蛤蜊', cat: 'shell', icon: '🦪', price: 60, rare: 'common', desc: '炒絲瓜與九層塔炒蛤蜊必備鮮味。', parts: ['🛡️ 貝殼', '💪 閉殼肌', '外套膜'], prepReq: 'wash' },
+            { id: 'oyster', name: '牡蠣', cat: 'shell', icon: '🦪', price: 90, rare: 'common', desc: '海洋牛奶，蚵仔煎與蒜蓉生蠔。', parts: ['🛡️ 蠔殼', '🦪 鮮嫩肚肚', '💪 貝柱'], prepReq: 'wash' },
+            { id: 'scallop', name: '扇貝', cat: 'shell', icon: '🐚', price: 140, rare: 'rare', desc: '帶殼扇貝，粉絲蒜蓉蒸極美。', parts: ['🛡️ 扇貝殼', '⚪ 干貝柱', '貝裙'], prepReq: 'wash' },
+            { id: 'dry_scallop', name: '干貝', cat: 'shell', icon: '🐚', price: 200, rare: 'rare', desc: '生食級大干貝，奶油香煎極致。', parts: ['⚪ 干貝柱肉'], prepReq: 'slice' },
+            { id: 'small_abalone', name: '九孔鮑魚', cat: 'shell', icon: '🦪', price: 220, rare: 'rare', desc: '台灣本土養殖，肉質彈牙有勁。', parts: ['🛡️ 鮑魚殼', '🦪 九孔肉', '🫀 內臟'], prepReq: 'wash' },
+            { id: 'abalone', name: '鮑魚', cat: 'shell', icon: '🦪', price: 380, rare: 'special', desc: '頂級四大海味之一，紅燒極品。', parts: ['🦪 鮑魚肉'], prepReq: 'wash_slice' },
+            { id: 'mussel', name: '淡菜', cat: 'shell', icon: '🐚', price: 100, rare: 'common', desc: '馬祖名產，白酒塔香極佳。', parts: ['🛡️ 黑貝殼', '足絲', '🐚 淡菜肉'], prepReq: 'wash' },
+            { id: 'short_neck_clam', name: '海瓜子', cat: 'shell', icon: '🦪', price: 80, rare: 'common', desc: '熱炒店人氣冠軍，九層塔快炒。', parts: ['🛡️ 花紋貝殼', '🦪 瓜子肉'], prepReq: 'wash' },
+            { id: 'razor_clam', name: '竹蟶', cat: 'shell', icon: '🐚', price: 130, rare: 'rare', desc: '形如竹節，肉質甘甜爽脆。', parts: ['🎋 竹管殼', '🐚 蟶肉'], prepReq: 'wash' },
+            { id: 'sea_snail', name: '螺肉', cat: 'shell', icon: '🐚', price: 95, rare: 'common', desc: '魷魚螺肉蒜靈魂食材。', parts: ['🐚 螺肉'], prepReq: 'wash' },
+
+            // D. 軟體及其他海鮮 (Soft & Others - 9種)
+            { id: 'cuttlefish', name: '花枝', cat: 'soft', icon: '🦑', price: 110, rare: 'common', desc: '墨魚，肉質厚實，生炒花枝名菜。', parts: ['🦑 花枝身', '🦑 花枝鬚', '⚫ 墨囊', '🛡️ 內殼'], prepReq: 'wash_slice' },
+            { id: 'neritic_squid', name: '透抽', cat: 'soft', icon: '🦑', price: 130, rare: 'common', desc: '體型修長，三杯與蒜蓉極佳。', parts: ['✨ 透明身', '👄 魷魚嘴', '🦑 觸手'], prepReq: 'wash_slice' },
+            { id: 'squid_small', name: '小卷', cat: 'soft', icon: '🦑', price: 90, rare: 'common', desc: '基隆小卷，椒鹽與川燙鮮甜。', parts: ['🦑 小卷身', '👁️ 眼睛'], prepReq: 'wash' },
+            { id: 'squid', name: '魷魚', cat: 'soft', icon: '🦑', price: 100, rare: 'common', desc: '客家小炒靈魂，乾魷魚香氣濃郁。', parts: ['🪽 魷魚翅', '🥩 魷魚肉', '🦴 軟骨'], prepReq: 'wash_slice' },
+            { id: 'octopus', name: '章魚', cat: 'soft', icon: '🐙', price: 140, rare: 'rare', desc: '八爪魚，五味章魚與章魚燒。', parts: ['🗣️ 章魚頭', '🔴 吸盤觸手', '👄 章魚嘴'], prepReq: 'wash_slice' },
+            { id: 'sea_cucumber', name: '海參', cat: 'soft', icon: '🥒', price: 260, rare: 'rare', desc: '高膠原蛋白，蔥爆海參經典。', parts: ['🥒 海參壁', '內壁'], prepReq: 'wash_slice' },
+            { id: 'sea_urchin', name: '海膽', cat: 'soft', icon: '🦔', price: 420, rare: 'special', desc: '海中黃金，甘甜濃郁入口即化。', parts: ['🦔 棘刺殼', '🟡 海膽黃'], prepReq: 'wash' },
+            { id: 'cobia', name: '海鱺', cat: 'soft', icon: '🐟', price: 170, rare: 'rare', desc: '澎湖特產，油脂豐富口感Q彈。', parts: ['🥩 海鱺肉'], prepReq: 'slice' },
+            { id: 'fish_roe', name: '魚卵', cat: 'soft', icon: '🟠', price: 120, rare: 'common', desc: '魚子，香煎魚卵沙拉熱炒必點。', parts: ['✨ 魚卵膜', '🟠 顆粒魚子'], prepReq: 'wash' },
+
+            // E. 牛肉類 (Beef - 10種)
+            { id: 'beef_shank', name: '牛腩', cat: 'beef', icon: '🥩', price: 130, rare: 'common', desc: '帶筋帶油脂，紅燒燉煮極致香味。', parts: ['💪 筋膜', '🥩 牛腩肉', '🥓 油脂'], prepReq: 'wash_slice' },
+            { id: 'beef_shin', name: '牛腱', cat: 'beef', icon: '🥩', price: 140, rare: 'common', desc: '花腱肉，滷牛肉與牛肉麵名料。', parts: ['🥩 腱子肉', '✨ 大理石筋紋'], prepReq: 'wash_slice' },
+            { id: 'beef_rib', name: '牛肋條', cat: 'beef', icon: '🥩', price: 160, rare: 'common', desc: '肋骨間肉，香煎與蔥爆多汁。', parts: ['🥩 肋條肉'], prepReq: 'slice' },
+            { id: 'short_rib', name: '牛小排', cat: 'beef', icon: '🥩', price: 280, rare: 'rare', desc: '油花密集，黑胡椒與燒烤首選。', parts: ['🦴 小排骨', '🥩 油花肉'], prepReq: 'slice' },
+            { id: 'filet', name: '菲力', cat: 'beef', icon: '🥩', price: 350, rare: 'rare', desc: '腰內肉，全身最精嫩無脂部位。', parts: ['❤️ 菲力心'], prepReq: 'slice' },
+            { id: 'sirloin', name: '沙朗', cat: 'beef', icon: '🥩', price: 260, rare: 'rare', desc: '牛脊背肉，肉質嫩且具牛肉濃香。', parts: ['🥩 沙朗肉', '🥓 背脂'], prepReq: 'slice' },
+            { id: 'ribeye', name: '肋眼牛肉', cat: 'beef', icon: '🥩', price: 320, rare: 'rare', desc: '中心塊與上蓋肉(老饕肉)完美組合。', parts: ['🥩 肋眼心', '⭐ 老饕部位', '🥓 油脂塊'], prepReq: 'slice' },
+            { id: 'flat_iron', name: '板腱', cat: 'beef', icon: '🥩', price: 170, rare: 'common', desc: '附著於肩胛骨，中間帶一條嫩筋。', parts: ['🥩 板腱肉', '💪 中心板筋'], prepReq: 'slice' },
+            { id: 'beef_flank', name: '牛五花', cat: 'beef', icon: '🥓', price: 110, rare: 'common', desc: '胸腹肉，蔥爆牛肉與沙茶火鍋靈魂。', parts: ['🥓 肥肉層', '🥩 瘦肉層'], prepReq: 'slice' },
+            { id: 'beef_tongue', name: '牛舌', cat: 'beef', icon: '👅', price: 300, rare: 'special', desc: '舌尖脆、舌根軟嫩，蔥鹽牛舌極品。', parts: ['👅 舌尖', '👅 舌根', '🥩 舌下肉'], prepReq: 'wash_slice' },
+
+            // F. 豬肉類 (Pork - 11種)
+            { id: 'pork_belly', name: '豬五花', cat: 'pork', icon: '🥓', price: 95, rare: 'common', desc: '三層肉，蒜泥白肉與客家小炒主角。', parts: ['✨ 豬皮', '🥓 油脂層', '🥩 瘦肉層'], prepReq: 'wash_slice' },
+            { id: 'pork_loin', name: '豬里肌', cat: 'pork', icon: '🥩', price: 100, rare: 'common', desc: '大里肌，糖醋排骨與炸豬排必備。', parts: ['🥩 里肌肉'], prepReq: 'slice' },
+            { id: 'pork_shoulder', name: '豬梅花', cat: 'pork', icon: '🥩', price: 110, rare: 'common', desc: '肩胛肉，油脂均勻肉質不柴。', parts: ['🥩 梅花肉紋'], prepReq: 'slice' },
+            { id: 'pork_butt', name: '豬肩肉', cat: 'pork', icon: '🥩', price: 90, rare: 'common', desc: '前腿胛心肉，絞肉與紅燒肉。', parts: ['🥩 肩肉'], prepReq: 'slice' },
+            { id: 'pork_ribs', name: '豬小排', cat: 'pork', icon: '🍖', price: 120, rare: 'common', desc: '肋排，椒鹽排骨與糖醋排骨。', parts: ['🦴 排骨骨頭', '🥩 肉層'], prepReq: 'wash_slice' },
+            { id: 'pork_spare_ribs', name: '豬肋排', cat: 'pork', icon: '🍖', price: 150, rare: 'rare', desc: '長肋骨，美式與熱炒醬燒。', parts: ['🦴 肋骨'], prepReq: 'slice' },
+            { id: 'pork_trotter', name: '豬腳', cat: 'pork', icon: '🍖', price: 130, rare: 'common', desc: '富含膠質，萬巒豬腳與紅燒蹄膀。', parts: ['🐾 豬蹄爪', '💪 筋健', '✨ 外皮'], prepReq: 'wash_slice' },
+            { id: 'pork_ear', name: '豬耳朵', cat: 'pork', icon: '👂', price: 70, rare: 'common', desc: '軟骨爽脆，煙燻與滷味小菜。', parts: ['👂 耳軟骨', '✨ 皮'], prepReq: 'wash_slice' },
+            { id: 'pork_liver', name: '豬肝', cat: 'pork', icon: '🫀', price: 65, rare: 'common', desc: '補鐵極佳，煎豬肝與麻油豬肝。', parts: ['🫀 豬肝葉'], prepReq: 'wash_slice' },
+            { id: 'pork_kidney', name: '豬腰', cat: 'pork', icon: '🫘', price: 110, rare: 'rare', desc: '腰子，麻油炒腰花熱炒經典。', parts: ['🌸 腰花', '尿腺'], prepReq: 'wash_slice' },
+            { id: 'pork_tripe', name: '豬肚', cat: 'pork', icon: '🫄', price: 105, rare: 'common', desc: '胃部，酸菜豬肚湯與薑絲炒豬肚。', parts: ['🫄 肚壁'], prepReq: 'wash_slice' },
+
+            // G. 雞鴨禽肉類 (Poultry - 12種)
+            { id: 'chicken_breast', name: '雞胸肉', cat: 'poultry', icon: '🍗', price: 65, rare: 'common', desc: '高蛋白低脂，宮保雞丁與鹽酥雞。', parts: ['🍗 雞胸主體', '🥩 雞小里肌'], prepReq: 'wash_slice' },
+            { id: 'chicken_thigh', name: '雞腿肉', cat: 'poultry', icon: '🍗', price: 85, rare: 'common', desc: '去骨雞腿，三杯雞與麻油雞靈魂。', parts: ['🍗 去骨腿肉', '✨ 雞皮'], prepReq: 'wash_slice' },
+            { id: 'chicken_wing', name: '雞翅', cat: 'poultry', icon: '🍗', price: 70, rare: 'common', desc: '三節翅，椒鹽與生炸雞翅。', parts: ['🪽 翅尖', '🪽 中翅', '🍗 翅棒'], prepReq: 'wash' },
+            { id: 'chicken_feet', name: '雞爪', cat: 'poultry', icon: '🐾', price: 50, rare: 'common', desc: '膠質豐富，滷雞爪與港式鳳爪。', parts: ['🐾 爪掌', '🐾 爪尖'], prepReq: 'wash' },
+            { id: 'chicken_gizzard', name: '雞胗', cat: 'poultry', icon: '🫀', price: 60, rare: 'common', desc: '砂囊，口感爽脆，爆炒雞胗。', parts: ['💪 肌肉壁'], prepReq: 'wash_slice' },
+            { id: 'chicken_heart', name: '雞心', cat: 'poultry', icon: '❤️', price: 55, rare: 'common', desc: '串燒與醬爆熱炒。', parts: ['❤️ 心室'], prepReq: 'wash' },
+            { id: 'chicken_liver', name: '雞肝', cat: 'poultry', icon: '🫀', price: 45, rare: 'common', desc: '質地綿密，醬燒雞肝。', parts: ['🫀 肝葉'], prepReq: 'wash' },
+            { id: 'whole_chicken', name: '全雞', cat: 'poultry', icon: '🐔', price: 250, rare: 'rare', desc: '白斬雞與桶仔雞原形。', parts: ['🗣️ 雞頭', '🐔 雞身', '🍗 雞腿', '🪽 雞翅'], prepReq: 'wash_slice' },
+            { id: 'duck_breast', name: '鴨胸', cat: 'poultry', icon: '🦆', price: 160, rare: 'rare', desc: '皮香肉紅，法式與甜麵醬炒鴨片。', parts: ['✨ 厚鴨皮', '🔴 紅肉'], prepReq: 'slice' },
+            { id: 'duck_leg', name: '鴨腿', cat: 'poultry', icon: '🍗', price: 130, rare: 'rare', desc: '當歸鴨與烤鴨腿。', parts: ['🦴 鴨腿骨', '🍗 腿肉'], prepReq: 'wash_slice' },
+            { id: 'goose_meat', name: '鵝肉', cat: 'poultry', icon: '🪿', price: 240, rare: 'special', desc: '鮮嫩多汁，新屋鵝肉與煙燻鵝。', parts: ['✨ 鵝皮', '🥩 鵝胸肉'], prepReq: 'wash_slice' },
+            { id: 'duck_tongue', name: '鴨舌', cat: 'poultry', icon: '👅', price: 180, rare: 'rare', desc: '滷味與椒鹽高級下酒菜。', parts: ['👅 舌尖', '👅 舌鬚'], prepReq: 'wash' },
+
+            // H. 其他特殊食材 (Special Meat - 6種)
+            { id: 'lamb_chop', name: '羊排', cat: 'special', icon: '🍖', price: 220, rare: 'rare', desc: '帶骨羊小排，孜然與黑胡椒香煎。', parts: ['🦴 羊骨', '🥩 羊肉'], prepReq: 'slice' },
+            { id: 'lamb_shoulder', name: '羊肩肉', cat: 'special', icon: '🥩', price: 170, rare: 'common', desc: '蔥爆羊肉與沙茶羊肉必備。', parts: ['🥩 肩肉'], prepReq: 'slice' },
+            { id: 'lamb_leg', name: '羊腿肉', cat: 'special', icon: '🍖', price: 190, rare: 'rare', desc: '生切羊肉片與羊肉爐。', parts: ['🍖 腿肉'], prepReq: 'wash_slice' },
+            { id: 'rabbit_meat', name: '兔肉', cat: 'special', icon: '🐇', price: 210, rare: 'special', desc: '高蛋白超低脂，麻辣兔丁。', parts: ['🐇 兔腿', '🥩 兔腰肉'], prepReq: 'wash_slice' },
+            { id: 'quail', name: '鵪鶉', cat: 'special', icon: '🐦', price: 120, rare: 'rare', desc: '法式香烤鵪鶉與椒鹽香酥鵪鶉。', parts: ['🐦 鵪鶉胸', '🍗 鵪鶉腿'], prepReq: 'wash' },
+            { id: 'pigeon', name: '鴿肉', cat: 'special', icon: '🕊️', price: 230, rare: 'special', desc: '頂級野味，紅燒乳鴿。', parts: ['🕊️ 鴿胸', '🪽 鴿翅'], prepReq: 'wash' }
+        ];
+
+        // 15 種熱炒調味料 (附帶貼圖)
+        const SEASONINGS_MAP = [
+            { name: '醬油', icon: '🍾' },
+            { name: '米酒', icon: '🍶' },
+            { name: '鹽', icon: '🧂' },
+            { name: '糖', icon: '🍬' },
+            { name: '胡椒', icon: '🫙' },
+            { name: '蒜末', icon: '🧄' },
+            { name: '蔥花', icon: '🧅' },
+            { name: '辣椒', icon: '🌶️' },
+            { name: '沙茶醬', icon: '🥫' },
+            { name: '蠔油', icon: '🍾' },
+            { name: '烏醋', icon: '🍷' },
+            { name: '白醋', icon: '🍶' },
+            { name: '香油', icon: '🫗' },
+            { name: '豆瓣醬', icon: '🍲' },
+            { name: '薑片', icon: '🫚' }
+        ];
+
+        const SEASONINGS = SEASONINGS_MAP.map(s => s.name);
+
+        // 熱炒菜單食譜資料庫 (用於顧客隨機點餐)
+        const MENU_RECIPES = [
+            { dish: '蒜蓉炒草蝦', ingredient: 'grass_shrimp', reqSeasonings: ['蒜末', '米酒', '醬油'] },
+            { dish: '胡椒白蝦', ingredient: 'white_shrimp', reqSeasonings: ['胡椒', '鹽', '米酒'] },
+            { dish: '九層塔炒蛤蜊', ingredient: 'clam', reqSeasonings: ['蒜末', '辣椒', '醬油', '米酒'] },
+            { dish: '蒜蓉蒸生蠔', ingredient: 'oyster', reqSeasonings: ['蒜末', '醬油', '香油'] },
+            { dish: '三杯透抽', ingredient: 'neritic_squid', reqSeasonings: ['醬油', '米酒', '黑麻油', '薑片', '蒜末'] },
+            { dish: '生炒花枝', ingredient: 'cuttlefish', reqSeasonings: ['烏醋', '糖', '蒜末', '辣椒'] },
+            { dish: '椒鹽小卷', ingredient: 'squid_small', reqSeasonings: ['椒鹽', '蔥花', '辣椒'] },
+            { dish: '清蒸石斑魚', ingredient: 'grouper', reqSeasonings: ['醬油', '薑片', '蔥花', '米酒'] },
+            { dish: '糖醋鯛魚片', ingredient: 'snapper', reqSeasonings: ['白醋', '糖', '醬油'] },
+            { dish: '蔥爆海參', ingredient: 'sea_cucumber', reqSeasonings: ['蔥花', '醬油', '蠔油', '米酒'] },
+            { dish: '金沙波士頓龍蝦', ingredient: 'boston_lobster', reqSeasonings: ['鹽', '蒜末'] },
+            { dish: '三杯雞', ingredient: 'chicken_thigh', reqSeasonings: ['醬油', '米酒', '薑片', '蒜末'] },
+            { dish: '宮保雞丁', ingredient: 'chicken_breast', reqSeasonings: ['辣椒', '醬油', '糖', '蒜末'] },
+            { dish: '蔥爆牛肉', ingredient: 'beef_flank', reqSeasonings: ['蔥花', '醬油', '米酒', '薑片'] },
+            { dish: '沙茶牛肋條', ingredient: 'beef_rib', reqSeasonings: ['沙茶醬', '醬油', '蒜末'] },
+            { dish: '蒜泥豬五花', ingredient: 'pork_belly', reqSeasonings: ['蒜末', '醬油', '香油'] },
+            { dish: '客家小炒', ingredient: 'squid', reqSeasonings: ['醬油', '蔥花', '辣椒', '米酒'] },
+            { dish: '糖醋豬小排', ingredient: 'pork_ribs', reqSeasonings: ['白醋', '糖', '醬油'] },
+            { dish: '紅燒牛腩', ingredient: 'beef_shank', reqSeasonings: ['醬油', '豆瓣醬', '薑片', '米酒'] },
+            { dish: '薑絲炒豬腸', ingredient: 'pork_tripe', reqSeasonings: ['薑片', '白醋', '鹽'] },
+            { dish: '麻油雞腿', ingredient: 'chicken_thigh', reqSeasonings: ['米酒', '薑片'] },
+            { dish: '黑胡椒牛小排', ingredient: 'short_rib', reqSeasonings: ['胡椒', '醬油', '蒜末', '奶油'] }
+        ];
+
+        /* ==========================================================================
+           2. 全局遊戲狀態 (Global Game State)
+           ========================================================================== */
+        let gameState = {
+            gold: 500,
+            gems: 10,
+            reputation: 100,
+            level: 1,
+            sound: true,
+            pantry: {},            // { 'grass_shrimp': { count: 2, prepStatus: 'sliced' } }
+            unlockedAnatomy: {},   // { 'salmon': ['魚頭', '魚身'] }
+            unlockedEnc: {},       // { 'salmon': true }
+            upgrades: { stove: 1, fridge: 1, seating: 1, chef: 1 },
+            currentOrder: null,
+            orderTimer: 90,
+            orderTimerInterval: null,
+            // 烹飪區狀態
+            wok: {
+                ingredients: [],   // list of ingredient ids in wok
+                seasonings: [],    // list of seasoning names
+                doneness: 0,       // 0 - 100
+                heat: 'med'        // low, med, high
+            },
+            // 備料區狀態
+            currentPrepId: 'salmon',
+            prepProgress: 0,
+            prepStatus: 'raw' // raw, washed, sliced
+        };
+
+        // Web Audio API 音效產生器
+        let audioCtx = null;
+        function playSound(type) {
+            if (!gameState.sound) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'chop') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'sizzle') {
+                    // noise
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300 + Math.random() * 200, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(1318, audioCtx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch (e) { }
+        }
+
+        /* ==========================================================================
+           3. UI 系統初始化與事件 (UI System Initialization)
+           ========================================================================== */
+        window.onload = function() {
+            renderMarket('all');
+            initAnatomyStation();
+            initPrepStation();
+            renderSeasonings();
+            renderEncyclopedia();
+            generateRandomOrder();
+            updateUI();
+            
+            // 載入存檔 (如有)
+            loadGameProgress();
+        };
+
+        function updateUI() {
+            document.getElementById('stat-gold').innerText = gameState.gold;
+            document.getElementById('stat-gems').innerText = gameState.gems;
+            document.getElementById('stat-rep').innerText = gameState.reputation + '%';
+            document.getElementById('stat-level').innerText = gameState.level;
+
+            // 更新廚房庫存側邊欄
+            const miniList = document.getElementById('pantry-mini-list');
+            const keys = Object.keys(gameState.pantry).filter(k => gameState.pantry[k] > 0);
+            document.getElementById('pantry-count-badge').innerText = `${keys.length} 種`;
+
+            if (keys.length === 0) {
+                miniList.innerHTML = `<p class="text-xs text-amber-400 p-2 italic">尚無備妥食材，請先往市場選購。</p>`;
+            } else {
+                miniList.innerHTML = keys.map(k => {
+                    const item = INGREDIENTS_DATABASE.find(i => i.id === k);
+                    return `<span onclick="addIngredientToWok('${k}')" title="點擊加入炒鍋" class="cursor-pointer bg-amber-800 hover:bg-orange-600 text-white text-[11px] px-2 py-1 rounded-lg border border-amber-600 font-bold flex items-center gap-1">
+                        ${item.icon} ${item.name} (${gameState.pantry[k]})
+                    </span>`;
+                }).join('');
+            }
+        }
+
+        // 切換工作站
+        function switchStation(stationId) {
+            document.querySelectorAll('.station-panel').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('active', 'bg-orange-600', 'text-white');
+                b.classList.add('hover:bg-amber-800', 'text-amber-200');
+            });
+
+            document.getElementById('station-' + stationId).classList.remove('hidden');
+            const activeBtn = document.getElementById('nav-' + stationId);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'bg-orange-600', 'text-white');
+                activeBtn.classList.remove('hover:bg-amber-800', 'text-amber-200');
+            }
+
+            if (stationId === 'encyclopedia') renderEncyclopedia();
+        }
+
+        /* ==========================================================================
+           4. 食材市場系統 (Market System)
+           ========================================================================== */
+        function renderMarket(category) {
+            const grid = document.getElementById('market-grid');
+            const filtered = category === 'all' 
+                ? INGREDIENTS_DATABASE 
+                : INGREDIENTS_DATABASE.filter(i => i.cat === category);
+
+            grid.innerHTML = filtered.map(item => `
+                <div class="bg-white rounded-2xl border-2 border-amber-200 p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between items-center text-center group">
+                    <div class="text-5xl my-3 transform group-hover:scale-110 transition select-none">${item.icon}</div>
+                    <div>
+                        <h4 class="font-bold text-amber-900 text-base">${item.name}</h4>
+                        <p class="text-xs text-stone-500 line-clamp-2 mt-1">${item.desc}</p>
+                    </div>
+                    <div class="w-full mt-4 flex justify-between items-center pt-3 border-t border-amber-100">
+                        <span class="font-game text-orange-600 font-bold text-base">$${item.price}</span>
+                        <button onclick="buyIngredient('${item.id}')" class="bg-amber-800 hover:bg-orange-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow transition">
+                            購買
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterMarket(cat) {
+            document.querySelectorAll('#market-cat-tabs .cat-btn').forEach(b => {
+                b.classList.remove('active', 'bg-orange-500', 'text-white');
+                b.classList.add('bg-stone-200', 'text-stone-700');
+            });
+            event.target.classList.add('active', 'bg-orange-500', 'text-white');
+            renderMarket(cat);
+        }
+
+        function buyIngredient(id) {
+            const item = INGREDIENTS_DATABASE.find(i => i.id === id);
+            if (!item) return;
+
+            if (gameState.gold >= item.price) {
+                gameState.gold -= item.price;
+                gameState.pantry[id] = (gameState.pantry[id] || 0) + 1;
+                gameState.unlockedEnc[id] = true;
+                playSound('coin');
+                updateUI();
+                updatePrepAndAnatomySelects();
+            } else {
+                alert('💰 金幣不足，無法購買此食材！請完成顧客訂單賺取金幣。');
+            }
+        }
+
+        /* ==========================================================================
+           5. 食材解剖工作站 (Anatomy Workstation)
+           ========================================================================== */
+        function initAnatomyStation() {
+            updatePrepAndAnatomySelects();
+            changeAnatomyTarget(INGREDIENTS_DATABASE[0].id);
+        }
+
+        function updatePrepAndAnatomySelects() {
+            const anatSelect = document.getElementById('anatomy-target-select');
+            const prepSelect = document.getElementById('prep-item-select');
+
+            const optionsHTML = INGREDIENTS_DATABASE.map(i => 
+                `<option value="${i.id}">${i.icon} ${i.name} ${gameState.pantry[i.id] ? '(庫存:'+gameState.pantry[i.id]+')' : ''}</option>`
+            ).join('');
+
+            if (anatSelect) anatSelect.innerHTML = optionsHTML;
+            if (prepSelect) prepSelect.innerHTML = optionsHTML;
+        }
+
+        function changeAnatomyTarget(id) {
+            const item = INGREDIENTS_DATABASE.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('anatomy-item-name').innerText = item.name;
+            document.getElementById('anatomy-item-cat').innerText = item.cat.toUpperCase();
+            
+            // 繪製 SVG/插畫
+            document.getElementById('anatomy-svg-container').innerHTML = `
+                <div class="text-9xl select-none filter drop-shadow-lg">${item.icon}</div>
+            `;
+
+            const partsList = document.getElementById('anatomy-parts-list');
+            const unlocked = gameState.unlockedAnatomy[id] || [];
+
+            partsList.innerHTML = item.parts.map(p => {
+                const isLearned = unlocked.includes(p);
+                return `
+                    <button onclick="learnAnatomyPart('${id}', '${p}')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold border transition flex justify-between items-center ${isLearned ? 'bg-emerald-100 border-emerald-400 text-emerald-800' : 'bg-white border-amber-300 hover:bg-amber-100 text-amber-900'}">
+                        <span><i class="fa-solid fa-circle-dot mr-2 ${isLearned ? 'text-emerald-500' : 'text-amber-400'}"></i>${p}</span>
+                        <span class="text-[10px] ${isLearned ? 'text-emerald-600 font-bold' : 'text-stone-400'}">${isLearned ? '已完成辨識 ✔' : '點擊檢視構造'}</span>
+                    </button>
+                `;
+            }).join('');
+
+            document.getElementById('anatomy-progress').innerText = `${unlocked.length}/${item.parts.length} 完成`;
+        }
+
+        function learnAnatomyPart(itemId, partName) {
+            if (!gameState.unlockedAnatomy[itemId]) gameState.unlockedAnatomy[itemId] = [];
+            if (!gameState.unlockedAnatomy[itemId].includes(partName)) {
+                gameState.unlockedAnatomy[itemId].push(partName);
+                playSound('chop');
+            }
+
+            document.getElementById('anatomy-info-box').innerHTML = `
+                🔍 <strong>${partName} 構造與廚藝學堂：</strong><br>
+                此部位為食材加工中非常關鍵的特徵，在生物解剖上具有獨特構造，適合進行清洗與切片調味。
+            `;
+
+            changeAnatomyTarget(itemId);
+            saveGameProgress();
+        }
+
+        /* ==========================================================================
+           6. 食材清洗與分切區 (Prep Station)
+           ========================================================================== */
+        function initPrepStation() {
+            changePrepTarget(INGREDIENTS_DATABASE[0].id);
+        }
+
+        function changePrepTarget(id) {
+            gameState.currentPrepId = id;
+            gameState.prepProgress = 0;
+            gameState.prepStatus = 'raw';
+            updatePrepUI();
+        }
+
+        function updatePrepUI() {
+            const item = INGREDIENTS_DATABASE.find(i => i.id === gameState.currentPrepId);
+            if (!item) return;
+
+            document.getElementById('prep-graphic-display').innerText = item.icon;
+            document.getElementById('prep-progress-bar').style.width = gameState.prepProgress + '%';
+            document.getElementById('prep-progress-text').innerText = `進度: ${gameState.prepProgress}%`;
+
+            let statusText = '原食材 (未處理)';
+            if (gameState.prepStatus === 'washed') statusText = '💧 已完成清洗去泥處理';
+            if (gameState.prepStatus === 'sliced') statusText = '🔪 已完成精準刀工分切！可以入鍋';
+
+            document.getElementById('prep-status-label').innerText = `準備狀態：${statusText}`;
+        }
+
+        function triggerPrepCut(e) {
+            if (gameState.prepProgress < 100) {
+                // 將每次點擊的進度增加由 20% 提升至 50%（點兩次即可完成分切）
+                gameState.prepProgress = Math.min(100, gameState.prepProgress + 50);
+                playSound('chop');
+
+                // 刀痕視覺特效
+                const board = document.getElementById('prep-interactive-board');
+                const rect = board.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const slash = document.createElement('div');
+                slash.className = 'slash-effect';
+                slash.style.left = x - 40 + 'px';
+                slash.style.top = y + 'px';
+                slash.style.width = '80px';
+                slash.style.transform = `rotate(${Math.random() * 60 - 30}deg)`;
+                board.appendChild(slash);
+
+                setTimeout(() => slash.remove(), 300);
+
+                if (gameState.prepProgress >= 100) {
+                    gameState.prepStatus = 'sliced';
+                }
+                updatePrepUI();
+            }
+        }
+
+        function doPrepAction(type) {
+            playSound(type === 'wash' ? 'sizzle' : 'chop');
+            gameState.prepProgress = 100;
+            gameState.prepStatus = type === 'wash' ? 'washed' : 'sliced';
+            updatePrepUI();
+        }
+
+        /* ==========================================================================
+           7. 中央熱炒料理區 (Wok Cooking Engine)
+           ========================================================================== */
+        function renderSeasonings() {
+            const rack = document.getElementById('seasoning-rack');
+            rack.innerHTML = SEASONINGS_MAP.map(s => `
+                <button onclick="addSeasoningToWok('${s.name}')" class="bg-amber-900 hover:bg-orange-600 text-amber-100 font-bold text-xs py-2 px-2.5 rounded-xl border border-amber-700 transition flex items-center justify-center gap-1.5 shadow-sm">
+                    ${s.icon} ${s.name}
+                </button>
+            `).join('');
+        }
+
+        function addIngredientToWok(id) {
+            if (gameState.pantry[id] && gameState.pantry[id] > 0) {
+                gameState.pantry[id]--;
+                gameState.wok.ingredients.push(id);
+                playSound('sizzle');
+                updateWokUI();
+                updateUI();
+            } else {
+                alert('庫存不足，請先去市場購買此食材。');
+            }
+        }
+
+        function addSeasoningToWok(name) {
+            gameState.wok.seasonings.push(name);
+            playSound('sizzle');
+            updateWokUI();
+        }
+
+        function updateWokUI() {
+            const contents = document.getElementById('wok-contents-icons');
+            const summary = document.getElementById('wok-summary-list');
+
+            const ingIcons = gameState.wok.ingredients.map(id => {
+                const item = INGREDIENTS_DATABASE.find(i => i.id === id);
+                return item ? item.icon : '';
+            }).join(' ');
+
+            if (gameState.wok.ingredients.length === 0 && gameState.wok.seasonings.length === 0) {
+                contents.innerHTML = `<span class="text-stone-500 text-sm font-bold">空鍋 (點擊食材與調味料入鍋)</span>`;
+                summary.innerHTML = `<p class="text-amber-400 italic">尚未加入食材或醬汁。</p>`;
+            } else {
+                contents.innerText = ingIcons || '🥣';
+                summary.innerHTML = `
+                    <p>🥬 <strong>主料:</strong> ${gameState.wok.ingredients.map(id => INGREDIENTS_DATABASE.find(i => i.id === id)?.name).join(', ') || '無'}</p>
+                    <p>🧂 <strong>調味:</strong> ${gameState.wok.seasonings.join(', ') || '無'}</p>
+                `;
+            }
+
+            // 更新熟度
+            const donenessBar = document.getElementById('cook-doneness-bar');
+            const donenessText = document.getElementById('cook-doneness-text');
+            donenessBar.style.width = gameState.wok.doneness + '%';
+
+            if (gameState.wok.doneness < 30) donenessText.innerText = '生生';
+            else if (gameState.wok.doneness < 70) donenessText.innerText = '三分熟';
+            else if (gameState.wok.doneness <= 100) donenessText.innerText = '香噴噴!';
+            else donenessText.innerText = '焦掉了!';
+        }
+
+        function tossWokAction() {
+            if (gameState.wok.ingredients.length === 0) return;
+
+            const wokVisual = document.getElementById('wok-visual');
+            wokVisual.classList.add('tossing');
+            setTimeout(() => wokVisual.classList.remove('tossing'), 400);
+
+            playSound('sizzle');
+
+            // 增加熟度
+            const heatInc = gameState.wok.heat === 'high' ? 25 : (gameState.wok.heat === 'med' ? 15 : 8);
+            gameState.wok.doneness = Math.min(120, gameState.wok.doneness + heatInc);
+            updateWokUI();
+        }
+
+        function setHeat(level) {
+            gameState.wok.heat = level;
+            ['low', 'med', 'high'].forEach(h => {
+                const btn = document.getElementById('heat-' + h);
+                btn.className = h === level 
+                    ? 'px-2 py-0.5 rounded text-xs font-bold bg-orange-600 text-white'
+                    : 'px-2 py-0.5 rounded text-xs font-bold bg-stone-700 text-stone-300';
+            });
+        }
+
+        function clearWokAction() {
+            gameState.wok.ingredients = [];
+            gameState.wok.seasonings = [];
+            gameState.wok.doneness = 0;
+            updateWokUI();
+        }
+
+        function serveDishAction() {
+            if (!gameState.currentOrder) {
+                alert('目前沒有等待餐點的顧客喔！');
+                return;
+            }
+
+            const order = gameState.currentOrder;
+            let score = 100;
+
+            // 1. 檢查核心食材
+            const hasMainIng = gameState.wok.ingredients.includes(order.ingredient);
+            if (!hasMainIng) score -= 50;
+
+            // 2. 檢查調味料命中率
+            const reqS = order.reqSeasonings;
+            const matchedS = reqS.filter(s => gameState.wok.seasonings.includes(s));
+            score -= (reqS.length - matchedS.length) * 10;
+
+            // 3. 熟度扣分
+            if (gameState.wok.doneness < 50) score -= 20;
+            if (gameState.wok.doneness > 100) score -= 30;
+
+            score = Math.max(10, score);
+            const rewardGold = Math.floor(score * 1.8);
+
+            gameState.gold += rewardGold;
+            playSound('coin');
+            alert(`🎉 料理送達！顧客評分：${score}分！獲得金幣 $${rewardGold}`);
+
+            clearWokAction();
+            generateRandomOrder();
+            updateUI();
+        }
+
+        /* ==========================================================================
+           8. 食材圖鑑與百科系統 (Encyclopedia)
+           ========================================================================== */
+        function renderEncyclopedia() {
+            const grid = document.getElementById('encyclopedia-grid');
+            const search = document.getElementById('enc-search-input')?.value.toLowerCase() || '';
+
+            const filtered = INGREDIENTS_DATABASE.filter(i => 
+                i.name.includes(search) || i.cat.includes(search)
+            );
+
+            const unlockedCount = Object.keys(gameState.unlockedEnc).length;
+            document.getElementById('enc-completion-badge').innerText = `解鎖度: ${unlockedCount} / 86`;
+
+            grid.innerHTML = filtered.map(item => {
+                const isUnlocked = gameState.unlockedEnc[item.id];
+                return `
+                    <div class="bg-white rounded-2xl border-2 ${isUnlocked ? 'border-amber-300' : 'border-stone-300 opacity-60'} p-3 flex flex-col items-center text-center shadow-sm relative">
+                        <div class="text-4xl my-1 select-none filter ${isUnlocked ? '' : 'grayscale'}">${item.icon}</div>
+                        <h4 class="font-bold text-amber-900 text-xs mt-1">${item.name}</h4>
+                        <span class="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full mt-1 font-bold">${item.cat}</span>
+                        ${isUnlocked ? '<span class="text-[9px] text-emerald-600 font-bold mt-1">已收藏 ✔</span>' : '<span class="text-[9px] text-stone-400 font-bold mt-1">未解鎖 🔒</span>'}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /* ==========================================================================
+           9. 顧客訂單與經營系統 (Customer Order System)
+           ========================================================================== */
+        function generateRandomOrder() {
+            const randomRecipe = MENU_RECIPES[Math.floor(Math.random() * MENU_RECIPES.length)];
+            const reqIng = INGREDIENTS_DATABASE.find(i => i.id === randomRecipe.ingredient);
+
+            gameState.currentOrder = {
+                dishName: randomRecipe.dish,
+                ingredient: randomRecipe.ingredient,
+                reqSeasonings: randomRecipe.reqSeasonings
+            };
+
+            document.getElementById('order-dish-name').innerText = randomRecipe.dish;
+            document.getElementById('order-req-ingredient').innerText = reqIng ? `${reqIng.icon} ${reqIng.name} (已清洗/分切)` : '食材';
+            
+            // 加入調味料貼圖標籤
+            const seasoningWithIcons = randomRecipe.reqSeasonings.map(sName => {
+                const item = SEASONINGS_MAP.find(sm => sm.name === sName);
+                return item ? `${item.icon} ${sName}` : sName;
+            }).join('、');
+
+            document.getElementById('order-req-seasoning').innerHTML = seasoningWithIcons;
+
+            // 重設倒數計時器：基礎延長至 120 秒（2 分鐘），並根據裝潢等級給予額外加成
+            clearInterval(gameState.orderTimerInterval);
+            const extraTime = (gameState.upgrades.seating - 1) * 20; // 每升級一次裝潢加 20 秒
+            const totalTimerMax = 120 + extraTime;
+            
+            gameState.orderTimer = totalTimerMax;
+            document.getElementById('order-timer-text').innerText = gameState.orderTimer + ' 秒';
+            document.getElementById('order-timer-bar').style.width = '100%';
+
+            gameState.orderTimerInterval = setInterval(() => {
+                gameState.orderTimer--;
+                document.getElementById('order-timer-text').innerText = gameState.orderTimer + ' 秒';
+                document.getElementById('order-timer-bar').style.width = (gameState.orderTimer / totalTimerMax * 100) + '%';
+
+                if (gameState.orderTimer <= 0) {
+                    clearInterval(gameState.orderTimerInterval);
+                    alert('⏳ 顧客等待過久氣憤離開了！聲譽稍有下降。');
+                    gameState.reputation = Math.max(50, gameState.reputation - 5);
+                    updateUI();
+                    generateRandomOrder();
+                }
+            }, 1000);
+        }
+
+        function buyUpgrade(type, cost) {
+            if (gameState.gold >= cost) {
+                gameState.gold -= cost;
+                gameState.upgrades[type] = (gameState.upgrades[type] || 1) + 1;
+                document.getElementById('lvl-' + type).innerText = gameState.upgrades[type];
+                playSound('coin');
+                updateUI();
+                alert('🎉 廚房設備升級成功！');
+            } else {
+                alert('💰 金幣不足，無法進行此設備升級！');
+            }
+        }
+
+        // Modal Controls
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        function togglePauseModal() {
+            document.getElementById('modal-overlay').classList.toggle('hidden');
+        }
+
+        function toggleSound() {
+            gameState.sound = !gameState.sound;
+            document.getElementById('sound-icon').className = gameState.sound ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        }
+
+        function saveGameProgress() {
+            try {
+                localStorage.setItem('seafood_chef_save', JSON.stringify({
+                    gold: gameState.gold,
+                    unlockedAnatomy: gameState.unlockedAnatomy,
+                    unlockedEnc: gameState.unlockedEnc,
+                    upgrades: gameState.upgrades
+                }));
+            } catch (e) { }
+        }
+
+        function loadGameProgress() {
+            try {
+                const save = localStorage.getItem('seafood_chef_save');
+                if (save) {
+                    const parsed = JSON.parse(save);
+                    gameState.gold = parsed.gold || 500;
+                    gameState.unlockedAnatomy = parsed.unlockedAnatomy || {};
+                    gameState.unlockedEnc = parsed.unlockedEnc || {};
+                    gameState.upgrades = parsed.upgrades || { stove: 1, fridge: 1, seating: 1, chef: 1 };
+                    updateUI();
+                }
+            } catch (e) { }
+        }
+    </script>
+</body>
+</html>
